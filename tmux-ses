@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+
+#Check if tmux is running
+# if ! command -v tmux &> /dev/null; then
+#     echo "tmux is not installed. Exiting."
+#     exit 1
+# fi
+
+if [[ $# -eq 1 ]]; then
+    selected=$1
+else
+    selected=$(find ~/Development/personal -mindepth 1 -maxdepth 1 -type d | fzf --reverse)
+fi
+
+if [[ -z $selected ]]; then
+    exit 0
+fi
+
+selected_name=$(basename "$selected" | tr . _)
+
+# Inside TMUX
+if pgrep -x "tmux" > /dev/null; then
+    if tmux has-session -t "$selected_name" 2> /dev/null; then
+      # If the session exists, switch to it
+        tmux switch-client -t $selected_name
+    else
+      # If the session doesn't exist, create it detached to avoid embedded sessions
+        # tmux new-session -s $selected_name -c $selected -d -n neovim "nvim ." \; new-window -n console
+        # tmux new-session -s $selected_name -c $selected -d -n neovim "nvim ." 
+        tmux new-session -s $selected_name -c $selected -d -n project 
+        tmux switch-client -t $selected_name
+    fi
+# else
+    # echo "tmux is not running"
+fi
+
+# Outside TMUX
+if tmux has-session -t=$selected_name 2> /dev/null; then
+    # If the session exists, switch to it
+    tmux attach-session -t $selected_name
+fi
+
+# Create and attach to the new session
+tmux new-session -s $selected_name -c $selected -d -n neovim "nvim ." 
+tmux attach-session -t $selected_name
+
+# Outside TMUX
+# if [[ -z $TMUX ]] && [[ -z $tmux_running ]]; then
+#     if tmux has-session -t "$selected_name" 2> /dev/null; then
+#         # The session exists, attach to it
+#         tmux switch-client -t $selected_name
+#     else
+#         # If the session doesn't exist, cerate it
+#         echo "Session $selected_name does not exist."
+#         tmux new-session -s $selected_name -c $selected
+#     fi
+#     # tmux new-session -s $selected_name -c $selected
+#     exit 0
+# fi
+
+
+# Check if there are any clients in the session
+# if tmux list-clients -t $selected_name 2> /dev/null | grep -q "^"; then
+#     # If clients exist, switch to the session
+#     tmux switch-client -t $selected_name
+# else
+#     # If no clients exist, attach to the session
+#     tmux attach-session -t $selected_name
+# fi
+
+
