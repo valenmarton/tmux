@@ -9,7 +9,7 @@
 if [[ $# -eq 1 ]]; then
     selected=$1
 else
-    selected=$(find ~/Development/personal -mindepth 1 -maxdepth 1 -type d | fzf --reverse)
+    selected=$(find ~/repos -mindepth 1 -maxdepth 1 -type d | fzf --reverse)
 fi
 
 if [[ -z $selected ]]; then
@@ -19,30 +19,35 @@ fi
 selected_name=$(basename "$selected" | tr . _)
 
 # Inside TMUX
-if pgrep -x "tmux" > /dev/null; then
+# if pgrep -x "tmux" > /dev/null; then
+if [[ -n "$TMUX" ]]; then
+    echo 'tmux is running' 
     if tmux has-session -t "$selected_name" 2> /dev/null; then
+        echo 'inside tmux, has session' 
       # If the session exists, switch to it
         tmux switch-client -t $selected_name
+        exit 0
     else
       # If the session doesn't exist, create it detached to avoid embedded sessions
         # tmux new-session -s $selected_name -c $selected -d -n neovim "nvim ." \; new-window -n console
         # tmux new-session -s $selected_name -c $selected -d -n neovim "nvim ." 
         tmux new-session -s $selected_name -c $selected -d -n project 
+        echo 'inside tmux, creating new session' 
         tmux switch-client -t $selected_name
+        exit 0
     fi
-# else
-    # echo "tmux is not running"
 fi
-
-# Outside TMUX
-if tmux has-session -t=$selected_name 2> /dev/null; then
-    # If the session exists, switch to it
-    tmux attach-session -t $selected_name
-fi
-
-# Create and attach to the new session
-tmux new-session -s $selected_name -c $selected -d -n neovim "nvim ." 
-tmux attach-session -t $selected_name
+echo "tmux is not running" 
+#
+# # Outside TMUX
+# if tmux has-session -t=$selected_name 2> /dev/null; then
+#     # If the session exists, switch to it
+#     tmux attach-session -t $selected_name
+# fi
+#
+# # Create and attach to the new session
+# tmux new-session -s $selected_name -c $selected -d -n neovim "nvim ." 
+# tmux attach-session -t $selected_name
 
 # Outside TMUX
 # if [[ -z $TMUX ]] && [[ -z $tmux_running ]]; then
